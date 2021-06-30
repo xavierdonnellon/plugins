@@ -653,6 +653,8 @@ class _VideoPlayerState extends State<VideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    print('texture id: $_textureId. Is textured? $isTextured');
+
     return isTextured
         ? widget.placeholder ?? Container()
         : _videoPlayerPlatform.buildView(_textureId);
