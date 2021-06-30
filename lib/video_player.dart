@@ -596,14 +596,11 @@ class _VideoAppLifeCycleObserver extends Object with WidgetsBindingObserver {
 /// Widget that displays the video controlled by [controller].
 class VideoPlayer extends StatefulWidget {
   /// Uses the given [controller] for all video rendered in this widget.
-  VideoPlayer(this.controller, {this.placeholder});
+  VideoPlayer(this.controller);
 
   /// The [VideoPlayerController] responsible for the video being rendered in
   /// this widget.
   final VideoPlayerController controller;
-    
-  /// Widget to be displayed when there is not yet an image fetched of the video 
-  final Widget placeholder; 
 
   @override
   _VideoPlayerState createState() => _VideoPlayerState();
@@ -650,12 +647,10 @@ class _VideoPlayerState extends State<VideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return isTextured
-        ? widget.placeholder ?? Container()
+    return _textureId == VideoPlayerController.kUninitializedTextureId
+        ? Container()
         : _videoPlayerPlatform.buildView(_textureId);
   }
-    
-  bool isTextured get => _textureId == VideoPlayerController.kUninitializedTextureId;
 }
 
 /// Used to configure the [VideoProgressIndicator] widget's colors for how it
