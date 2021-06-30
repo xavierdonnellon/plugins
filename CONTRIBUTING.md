@@ -1,80 +1,82 @@
-# Contributing to Flutter Plugins
+## Updating pigeon-generated files
 
-[![Build Status](https://api.cirrus-ci.com/github/flutter/plugins.svg)](https://cirrus-ci.com/github/flutter/plugins/master)
+If you update files in the pigeons/ directory, run the following
+command in this directory (ignore the errors you get about
+dependencies in the examples directory):
 
-_See also: [Flutter's code of conduct](https://github.com/flutter/flutter/blob/master/CODE_OF_CONDUCT.md)_
+```bash
+flutter pub upgrade
+flutter pub run pigeon --dart_null_safety --input pigeons/messages.dart
+# git commit your changes so that your working environment is clean
+(cd ../../../; ./script/tool_runner.sh format --clang-format=clang-format-7)
+```
 
-## Welcome
+If you update pigeon itself and want to test the changes here,
+temporarily update the pubspec.yaml by adding the following to the
+`dependency_overrides` section, assuming you have checked out the
+`flutter/packages` repo in a sibling directory to the `plugins` repo:
 
-For an introduction to contributing to Flutter, see [our contributor
-guide](https://github.com/flutter/flutter/blob/master/CONTRIBUTING.md).
+```yaml
+  pigeon:
+    path:
+      ../../../../packages/packages/pigeon/
+```
 
-Additional resources specific to the plugins repository:
-- [Setting up the Plugins development
-  environment](https://github.com/flutter/flutter/wiki/Setting-up-the-Plugins-development-environment),
-  which covers the setup process for this repository.
-- [Plugins repository structure](https://github.com/flutter/flutter/wiki/Plugins-and-Packages-repository-structure),
-  to get an overview of how this repository is laid out.
-- [Plugin tests](https://github.com/flutter/flutter/wiki/Plugin-Tests), which explains
-  the different kinds of tests used for plugins, where to find them, and how to run them.
-  As explained in the Flutter guide,
-  [**PRs needs tests**](https://github.com/flutter/flutter/wiki/Tree-hygiene#tests), so
-  this is critical to read before submitting a PR.
-- [Contributing to Plugins and Packages](https://github.com/flutter/flutter/wiki/Contributing-to-Plugins-and-Packages),
-  for more information about how to make PRs for this repository, especially when
-  changing federated plugins.
+Then, run the commands above. When you run `pub get` it should warn
+you that you're using an override. If you do this, you will need to
+publish pigeon before you can land the updates to this package, since
+the CI tests run the analysis using latest published version of
+pigeon, not your version or the version on master.
 
-## Important note
+In either case, the configuration will be obtained automatically from
+the `pigeons/messages.dart` file (see `configurePigeon` at the bottom
+of that file).
 
-As of January 2021, we are no longer accepting non-critical PRs for the
-[deprecated plugins](./README.md#deprecated), as all new development should
-happen in the Flutter Community Plus replacements. If you have a PR for
-something other than a critical issue (crashes, build failures, security issues)
-in one of those pluigns, please [submit it to the Flutter Community Plus
-replacement](https://github.com/fluttercommunity/plus_plugins/pulls) instead.
+While contributing, you may also want to set the following dependency
+overrides:
 
-## Other notes
+```yaml
+dependency_overrides:
+  video_player_platform_interface:
+    path:
+      ../video_player_platform_interface
+  video_player_web:
+    path:
+      ../video_player_web
+```
 
-### Style
+## Publishing plugin updates that span multiple plugin packages
 
-Flutter plugins follow Google style—or Flutter style for Dart—for the languages they
-use, and use auto-formatters:
-- [Dart](https://github.com/flutter/flutter/wiki/Style-guide-for-Flutter-repo) formatted
-  with `dart format`
-- [C++](https://google.github.io/styleguide/cppguide.html) formatted with `clang-format`
-  - **Note**: The Linux plugins generally follow idiomatic GObject-based C
-    style. See [the engine style
-    notes](https://github.com/flutter/engine/blob/master/CONTRIBUTING.md#style)
-    for more details, and exceptions.
-- [Java](https://google.github.io/styleguide/javaguide.html) formatted with
-  `google-java-format`
-- [Objective-C](https://google.github.io/styleguide/objcguide.html) formatted with
-  `clang-format`
+If your change affects both the interface package and the
+implementation packages, then you will need to publish a version of
+the plugin in between landing the interface changes and the
+implementation changes, since the implementations depend on the
+interface via pub.
 
-### The review process
+To do this, follow these steps:
 
-Reviewing PRs often requires a non-trivial amount of time. We prioritize issues, not PRs, so that we use our maintainers' time in the most impactful way. Issues pertaining to this repository are managed in the [flutter/flutter issue tracker and are labeled with "plugin"](https://github.com/flutter/flutter/issues?q=is%3Aopen+is%3Aissue+label%3Aplugin+sort%3Areactions-%2B1-desc). Non-trivial PRs should have an associated issue that will be used for prioritization. See the [prioritization section](https://github.com/flutter/flutter/wiki/Issue-hygiene#prioritization) in the Flutter wiki to understand how issues are prioritized.
+1. Create a PR that has all the changes, and update the
+`pubspec.yaml`s to have path-based dependency overrides as described
+in the "Updating pigeon-generated files" section above.
 
-Newly opened PRs first go through initial triage which results in one of:
-  * **Merging the PR** - if the PR can be quickly reviewed and looks good.
-  * **Requesting minor changes** - if the PR can be quickly reviewed, but needs changes.
-  * **Moving the PR to the backlog** - if the review requires non-trivial effort and the issue isn't currently a priority; in this case the maintainer will:
-    * Add the "backlog" label to the issue.
-    * Leave a comment on the PR explaining that the review is not trivial and that the issue will be looked at according to priority order.
-  * **Starting a non-trivial review** - if the review requires non-trivial effort and the issue is a priority; in this case the maintainer will:
-    * Add the "in review" label to the issue.
-    * Self assign the PR.
-  * **Closing the PR** - if the PR maintainer decides that the PR should not be merged.
+2. Upload that PR and get it reviewed and into a state where the only
+test failure is the one complaining that you can't publish a package
+that has dependency overrides.
 
-Please be aware that there is currently a significant backlog, so reviews for plugin PRs will
-in most cases take significantly longer to begin than the two-week timeframe given in the
-main Flutter PR guide. An effort is underway to work through the backlog, but it will
-take time. If you are interested in hepling out (e.g., by doing initial reviews looking
-for obvious problems like missing or failing tests), please reach out
-[on Discord](https://github.com/flutter/flutter/wiki/Chat) in `#hackers-ecosystem`.
+3. Create a PR that's a subset of the one in the previous step that
+only includes the interface changes, with no dependency overrides, and
+submit that.
 
-### Releasing
+4. Once you have had that reviewed and landed, publish the interface
+parts of the plugin to pub.
 
-If you are a team member landing a PR, or just want to know what the release
-process is for plugin changes, see [the release
-documentation](https://github.com/flutter/flutter/wiki/Releasing-a-Plugin-or-Package).
+5. Now, update the original full PR to not use dependency overrides
+but to instead refer to the new version of the plugin, and sync it to
+master (so that the interface changes are gone from the PR). Submit
+that PR.
+
+6. Once you have had _that_ PR reviewed and landed, publish the
+implementation parts of the plugin to pub.
+
+You may need to publish each implementation package independently of
+the main package also, depending on exactly what your change entails.
